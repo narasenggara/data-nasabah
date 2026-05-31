@@ -456,10 +456,10 @@ function copyTemplate() {
 
 function kirimWA() {
   if (!currentWaData) return;
-  const hp = currentWaData.hp.replace(/\D/g,'');
+  const hp = currentWaData.hp.toString().replace(/\D/g,'');
   const intl = hp.startsWith('0') ? '62' + hp.slice(1) : hp;
   const text = document.getElementById('modal-template').textContent;
-  window.open(`https://wa.me/${intl}?text=${encodeURIComponent(text)}`, '_blank');
+  window.open('https://wa.me/' + intl + '?text=' + encodeURIComponent(text), '_blank');
 }
 
 // Close modal on overlay click
