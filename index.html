@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PGI Ibrahim Adjie — Data Nasabah</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1a6b3c;
+    --green-light: #e8f5ee;
+    --green-mid: #2d9e5f;
+    --gold: #c9930a;
+    --gold-light: #fef9eb;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --border: #e2e6ea;
+    --text: #1a1d21;
+    --muted: #6b7280;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--green);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .logo-badge {
+    background: #fff;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  header h1 {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  header span {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    margin-left: auto;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px;
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .tab-btn.active {
+    background: var(--green);
+    color: #fff;
+  }
+
+  .tab-btn:hover:not(.active) {
+    background: var(--green-light);
+    color: var(--green);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* PASTE BOX */
+  .paste-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .paste-section label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 160px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: 'Fira Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    background: #fafbfc;
+    resize: vertical;
+    transition: border-color 0.15s;
+    line-height: 1.6;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--green-mid);
+    background: #fff;
+  }
+
+  .btn-parse {
+    margin-top: 12px;
+    padding: 10px 24px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-parse:hover { background: #155a32; }
+
+  /* RESULT CARD */
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+  }
+
+  .result-card.show { display: block; }
+
+  .card-header {
+    background: var(--green-light);
+    border-bottom: 1px solid #c6e8d4;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-header .faktur {
+    font-family: 'Fira Mono', monospace;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--green);
+  }
+
+  .status-badge {
+    margin-left: auto;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .status-berjalan { background: var(--green-light); color: var(--green); border: 1px solid #a8d8b8; }
+  .status-lunas { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+  .status-reject { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .info-section {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-section:nth-child(odd) {
+    border-right: 1px solid var(--border);
+  }
+
+  .info-section.full {
+    grid-column: 1 / -1;
+    border-right: none;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--green);
+    margin-bottom: 10px;
+  }
+
+  .field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+
+  .field-row .lbl {
+    color: var(--muted);
+    flex-shrink: 0;
+    min-width: 110px;
+  }
+
+  .field-row .val {
+    font-weight: 500;
+    text-align: right;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  .val.highlight {
+    color: var(--green);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .val.phone {
+    color: #0369a1;
+    text-decoration: none;
+  }
+
+  /* TEMPLATE BOX */
+  .template-section {
+    border-top: 1px solid var(--border);
+    padding: 20px;
+    background: #fcfcfc;
+  }
+
+  .template-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .template-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+  }
+
+  .btn-copy {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-copy:hover { border-color: var(--green); color: var(--green); }
+  .btn-copy.copied { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+  .template-text {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    margin-bottom: 14px;
+    min-height: 80px;
+  }
+
+  .btn-wa {
+    width: 100%;
+    padding: 13px;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.15s;
+  }
+
+  .btn-wa:hover { background: #1ebe5d; }
+  .btn-wa:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  .wa-icon {
+    width: 22px;
+    height: 22px;
+    fill: white;
+  }
+
+  /* Phone display */
+  .phone-display {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* Error */
+  .parse-error {
+    display: none;
+    background: var(--danger-light);
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    color: var(--danger);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  .parse-error.show { display: block; }
+
+  /* Coming soon panel */
+  .coming-soon {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .coming-soon .icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  .coming-soon h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .coming-soon p {
+    font-size: 14px;
+  }
+
+  /* Tanggal info */
+  .date-row {
+    display: flex;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--gold-light);
+  }
+
+  .date-item {
+    flex: 1;
+  }
+
+  .date-item .lbl {
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+
+  .date-item .val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .date-item .val.jt { color: var(--danger); }
+
+  @media (max-width: 600px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .info-section:nth-child(odd) { border-right: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">PGI</div>
+  <h1>Cabang Ibrahim Adjie</h1>
+  <span>Gadai System</span>
+</header>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('followup')">
+      💬 Follow Up Gadai
+    </button>
+    <button class="tab-btn" onclick="switchTab('spreadsheet')">
+      📊 Kirim ke Spreadsheet
+    </button>
+    <button class="tab-btn" onclick="switchTab('pelunasan')">
+      ✅ Pelunasan
+    </button>
+    <button class="tab-btn" onclick="switchTab('perpanjang')">
+      🔄 Perpanjang
+    </button>
+  </div>
+
+  <!-- TAB: FOLLOW UP -->
+  <div class="tab-panel active" id="tab-followup">
+
+    <div class="paste-section">
+      <label>📋 Paste Data Faktur Gadai</label>
+      <textarea id="rawInput" placeholder="Paste teks data dari sistem gadai di sini..."></textarea>
+      <div class="parse-error" id="parseError">⚠️ Gagal membaca data. Pastikan format teks sesuai.</div>
+      <button class="btn-parse" onclick="parseData()">
+        <span>🔍</span> Baca Data
+      </button>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result-card" id="resultCard">
+
+      <div class="card-header">
+        <div>
+          <div style="font-size:11px; color: var(--green); font-weight:600; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:2px;">No. Faktur</div>
+          <div class="faktur" id="r-faktur">—</div>
+        </div>
+        <div id="r-status-badge" class="status-badge status-berjalan">Berjalan</div>
+      </div>
+
+      <!-- Tanggal -->
+      <div class="date-row">
+        <div class="date-item">
+          <div class="lbl">Tanggal Gadai</div>
+          <div class="val" id="r-tgl-gadai">—</div>
+        </div>
+        <div class="date-item">
+          <div class="lbl">Jatuh Tempo</div>
+          <div class="val jt" id="r-jt">—</div>
+        </div>
+        <div class="date-item">
+          <div class="lbl">Cabang</div>
+          <div class="val" id="r-cabang">—</div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+
+        <!-- Data Anggota -->
+        <div class="info-section">
+          <div class="section-title">👤 Data Nasabah</div>
+          <div class="field-row"><span class="lbl">No. Anggota</span><span class="val" id="r-no-anggota">—</span></div>
+          <div class="field-row"><span class="lbl">Nama</span><span class="val" id="r-nama">—</span></div>
+          <div class="field-row"><span class="lbl">No. KTP</span><span class="val" id="r-ktp">—</span></div>
+          <div class="field-row"><span class="lbl">Alamat</span><span class="val" id="r-alamat">—</span></div>
+          <div class="field-row"><span class="lbl">No. HP</span><span class="val"><a class="val phone" id="r-hp" href="#">—</a></span></div>
+        </div>
+
+        <!-- Data Pinjaman -->
+        <div class="info-section">
+          <div class="section-title">💰 Data Pinjaman</div>
+          <div class="field-row"><span class="lbl">Nilai Taksiran</span><span class="val" id="r-taksiran">—</span></div>
+          <div class="field-row"><span class="lbl">Pinjaman Maks</span><span class="val highlight" id="r-pinjaman">—</span></div>
+          <div class="field-row"><span class="lbl">Posisi Barang</span><span class="val" id="r-posisi">—</span></div>
+        </div>
+
+        <!-- Data Barang -->
+        <div class="info-section full">
+          <div class="section-title">📦 Data Barang</div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 24px;">
+            <div>
+              <div class="field-row"><span class="lbl">Jenis</span><span class="val" id="r-jenis">—</span></div>
+              <div class="field-row"><span class="lbl">Merk</span><span class="val" id="r-merk">—</span></div>
+              <div class="field-row"><span class="lbl">Tipe</span><span class="val" id="r-tipe">—</span></div>
+            </div>
+            <div>
+              <div class="field-row"><span class="lbl">Grade</span><span class="val" id="r-grade">—</span></div>
+              <div class="field-row"><span class="lbl">Warna</span><span class="val" id="r-warna">—</span></div>
+              <div class="field-row"><span class="lbl">SN/IMEI</span><span class="val" id="r-sn">—</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TEMPLATE FOLLOW UP -->
+      <div class="template-section">
+        <div class="template-header">
+          <div class="template-label">💬 Template Follow Up WhatsApp</div>
+          <button class="btn-copy" id="copyBtn" onclick="copyTemplate()">
+            📋 Salin
+          </button>
+        </div>
+        <div class="template-text" id="templateText"></div>
+        <button class="btn-wa" id="btnWa" onclick="kirimWA()">
+          <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Kirim ke WhatsApp Nasabah
+        </button>
+        <div class="phone-display" id="phoneDisplay"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: Lainnya (Coming Soon) -->
+  <div class="tab-panel" id="tab-spreadsheet">
+    <div class="result-card show">
+      <div class="coming-soon">
+        <div class="icon">📊</div>
+        <h3>Kirim ke Spreadsheet</h3>
+        <p>Fitur ini akan segera hadir.</p>
+      </div>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-pelunasan">
+    <div class="result-card show">
+      <div class="coming-soon">
+        <div class="icon">✅</div>
+        <h3>Pelunasan</h3>
+        <p>Fitur ini akan segera hadir.</p>
+      </div>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-perpanjang">
+    <div class="result-card show">
+      <div class="coming-soon">
+        <div class="icon">🔄</div>
+        <h3>Perpanjang</h3>
+        <p>Fitur ini akan segera hadir.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let parsedData = {};
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  function getVal(text, key) {
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line === key && i + 1 < lines.length) {
+        const next = lines[i + 1].trim();
+        if (next && next !== '') return next;
+      }
+    }
+    return '';
+  }
+
+  function parseData() {
+    const raw = document.getElementById('rawInput').value.trim();
+    const err = document.getElementById('parseError');
+    err.classList.remove('show');
+
+    if (!raw) {
+      err.textContent = '⚠️ Kolom teks kosong. Paste data faktur terlebih dahulu.';
+      err.classList.add('show');
+      return;
+    }
+
+    const data = {};
+    data.faktur     = getVal(raw, 'No. Faktur');
+    data.nama       = getVal(raw, 'Nama');
+    data.noAnggota  = getVal(raw, 'No. Anggota');
+    data.ktp        = getVal(raw, 'No. Identitas');
+    data.alamat     = getVal(raw, 'Alamat');
+    data.hp         = getVal(raw, 'No. Handphone');
+    data.status     = getVal(raw, 'Status Gadai');
+    data.posisi     = getVal(raw, 'Posisi Barang');
+    data.jenisBrg   = getVal(raw, 'Jenis Barang');
+    data.merk       = getVal(raw, 'Merk Barang');
+    data.tipe       = getVal(raw, 'Tipe Barang');
+    data.grade      = getVal(raw, 'Grade Barang');
+    data.warna      = getVal(raw, 'Warna');
+    data.sn         = getVal(raw, 'No. IMEI / SN');
+    data.cabang     = getVal(raw, 'Cabang Penggadaian');
+    data.tglGadai   = getVal(raw, 'Tanggal Gadai');
+    data.jatuhTempo = getVal(raw, 'Tanggal Jatuh Tempo');
+    data.taksiran   = getVal(raw, 'Nilai Taksiran');
+    data.pinjaman   = getVal(raw, 'Pinjaman Maksimum');
+
+    if (!data.nama || !data.hp) {
+      err.textContent = '⚠️ Data tidak lengkap. Nama atau No. Handphone tidak ditemukan.';
+      err.classList.add('show');
+      return;
+    }
+
+    parsedData = data;
+    renderResult(data);
+  }
+
+  function renderResult(d) {
+    document.getElementById('r-faktur').textContent    = d.faktur || '—';
+    document.getElementById('r-nama').textContent      = d.nama || '—';
+    document.getElementById('r-no-anggota').textContent = d.noAnggota || '—';
+    document.getElementById('r-ktp').textContent       = d.ktp || '—';
+    document.getElementById('r-alamat').textContent    = d.alamat || '—';
+    document.getElementById('r-posisi').textContent    = d.posisi || '—';
+    document.getElementById('r-jenis').textContent     = d.jenisBrg || '—';
+    document.getElementById('r-merk').textContent      = d.merk || '—';
+    document.getElementById('r-tipe').textContent      = d.tipe || '—';
+    document.getElementById('r-grade').textContent     = d.grade || '—';
+    document.getElementById('r-warna').textContent     = d.warna || '—';
+    document.getElementById('r-sn').textContent        = d.sn || '—';
+    document.getElementById('r-cabang').textContent    = d.cabang || '—';
+    document.getElementById('r-tgl-gadai').textContent = d.tglGadai || '—';
+    document.getElementById('r-jt').textContent        = d.jatuhTempo || '—';
+    document.getElementById('r-taksiran').textContent  = d.taksiran || '—';
+    document.getElementById('r-pinjaman').textContent  = d.pinjaman || '—';
+
+    const hpEl = document.getElementById('r-hp');
+    hpEl.textContent = d.hp;
+    hpEl.href = 'tel:' + d.hp;
+
+    // Status badge
+    const badge = document.getElementById('r-status-badge');
+    badge.textContent = d.status || 'Berjalan';
+    badge.className = 'status-badge';
+    if (d.status && d.status.toLowerCase().includes('lunas')) badge.classList.add('status-lunas');
+    else if (d.status && d.status.toLowerCase().includes('reject')) badge.classList.add('status-reject');
+    else badge.classList.add('status-berjalan');
+
+    // Template
+    const nama = d.nama || 'Nasabah';
+    const template = `Hai Kak ${nama}, terima kasih sudah melakukan gadai di PGI Cabang Ibrahim Adjie🙏\n\nSemoga dana yang diterima bisa membantu kebutuhan Kakak ya 😊\nJika ada pertanyaan terkait perpanjangan atau pelunasan, silakan hubungi kami kapan saja melalui chat ini.\n\nJika ada teman atau keluarga yang membutuhkan dana cepat, boleh direkomendasikan ke PGI Cabang Ibrahim Adjie di :\n📍Jl. Ibrahim Adjie No.296, Binong, Kec. Batununggal, Kota Bandung, Jawa Barat 40275\n\nTerima kasih atas kepercayaannya. 🙏🏻☺️`;
+
+    document.getElementById('templateText').textContent = template;
+
+    // WA button
+    const hp = d.hp.replace(/\D/g, '');
+    const intlHp = hp.startsWith('0') ? '62' + hp.slice(1) : hp;
+    document.getElementById('btnWa').setAttribute('data-hp', intlHp);
+    document.getElementById('phoneDisplay').textContent = '📱 ' + d.hp;
+
+    document.getElementById('resultCard').classList.add('show');
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function copyTemplate() {
+    const text = document.getElementById('templateText').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✅ Tersalin!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = '📋 Salin';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function kirimWA() {
+    const hp = document.getElementById('btnWa').getAttribute('data-hp');
+    const text = document.getElementById('templateText').textContent;
+    if (!hp) return;
+    const url = `https://wa.me/${hp}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+</script>
+</body>
+</html>
