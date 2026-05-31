@@ -434,7 +434,8 @@ function openFollowUp(nama, hp) {
   currentWaData = { nama, hp };
   document.getElementById('modal-nama').textContent = nama;
   document.getElementById('modal-hp').textContent = hp;
-  const template = `Hai Kak ${nama}, terima kasih sudah melakukan gadai di PGI Cabang Ibrahim Adjie🙏\n\nSemoga dana yang diterima bisa membantu kebutuhan Kakak ya 😊\nJika ada pertanyaan terkait perpanjangan atau pelunasan, silakan hubungi kami kapan saja melalui chat ini.\n\nJika ada teman atau keluarga yang membutuhkan dana cepat, boleh direkomendasikan ke PGI Cabang Ibrahim Adjie di :\n📍Jl. Ibrahim Adjie No.296, Binong, Kec. Batununggal, Kota Bandung, Jawa Barat 40275\n\nTerima kasih atas kepercayaannya. 🙏🏻☺️`;
+  const e = { pray:'\uD83D\uDE4F', smile:'\uD83D\uDE0A', pin:'\uD83D\uDCCD', pray2:'\uD83D\uDE4F\uD83C\uDFFB', smile2:'\u263A\uFE0F' };
+  const template = 'Hai Kak ' + nama + ', terima kasih sudah melakukan gadai di PGI Cabang Ibrahim Adjie' + e.pray + '\n\nSemoga dana yang diterima bisa membantu kebutuhan Kakak ya ' + e.smile + '\nJika ada pertanyaan terkait perpanjangan atau pelunasan, silakan hubungi kami kapan saja melalui chat ini.\n\nJika ada teman atau keluarga yang membutuhkan dana cepat, boleh direkomendasikan ke PGI Cabang Ibrahim Adjie di :\n' + e.pin + 'Jl. Ibrahim Adjie No.296, Binong, Kec. Batununggal, Kota Bandung, Jawa Barat 40275\n\nTerima kasih atas kepercayaannya. ' + e.pray2 + e.smile2;
   document.getElementById('modal-template').textContent = template;
   document.getElementById('copy-toast').style.display = 'none';
   document.getElementById('modalOverlay').classList.add('show');
