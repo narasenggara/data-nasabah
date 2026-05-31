@@ -312,29 +312,27 @@ async function kirimKeSheet() {
   const errEl = document.getElementById('parseError');
   const sucEl = document.getElementById('parseSuccess');
   errEl.classList.remove('show');
+  sucEl.classList.remove('show');
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Mengirim...';
 
   try {
-    const res = await fetch(SCRIPT_URL, {
+    // no-cors karena Apps Script POST tidak support CORS header
+    await fetch(SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(parsedData)
     });
-    const json = await res.json();
-    if (json.status === 'ok') {
-      sucEl.textContent = `✅ Data ${parsedData.nama} berhasil ditambahkan ke spreadsheet!`;
-      sucEl.classList.add('show');
-      // Reset form
-      document.getElementById('rawInput').value = '';
-      document.getElementById('previewWrap').style.display = 'none';
-      document.getElementById('noPreview').style.display = 'block';
-      parsedData = null;
-      // Reload table
-      loadData();
-    } else {
-      throw new Error('Respons tidak OK');
-    }
+    // no-cors = opaque response, anggap sukses lalu tunggu sebentar baru reload
+    const namaKirim = parsedData.nama;
+    sucEl.textContent = `✅ Data ${namaKirim} berhasil dikirim! Memuat ulang daftar...`;
+    sucEl.classList.add('show');
+    document.getElementById('rawInput').value = '';
+    document.getElementById('previewWrap').style.display = 'none';
+    document.getElementById('noPreview').style.display = 'block';
+    parsedData = null;
+    setTimeout(() => loadData(), 1500);
   } catch(e) {
     errEl.textContent = '❌ Gagal mengirim. Cek koneksi atau Apps Script URL.';
     errEl.classList.add('show');
@@ -344,21 +342,42 @@ async function kirimKeSheet() {
   btn.innerHTML = '<span>📤</span> Tambah ke Spreadsheet';
 }
 
-// ---- LOAD DATA ----
+// ---- FORMAT TANGGAL ----
+function formatTgl(val) {
+  if (!val) return '—';
+  // Kalau sudah dd/mm/yyyy langsung return
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(val.toString())) return val;
+  // Kalau ISO string dari Google Sheets
+  try {
+    const d = new Date(val);
+    if (isNaN(d)) return val.toString();
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  } catch(e) { return val.toString(); }
+}
+
+// ---- LOAD DATA (JSONP) ----
 function loadData() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>';
-  
+
+  // Hapus script JSONP lama kalau ada
+  const old = document.getElementById('_jsonp_load');
+  if (old) old.remove();
+
   window._loadCallback = function(json) {
     allRows = json.data || [];
     renderTable(allRows);
     updateStats(allRows);
-    document.getElementById('_jsonp')?.remove();
+    const s = document.getElementById('_jsonp_load');
+    if (s) s.remove();
   };
 
   const s = document.createElement('script');
-  s.id = '_jsonp';
-  s.src = SCRIPT_URL + '?callback=_loadCallback';
+  s.id = '_jsonp_load';
+  s.src = SCRIPT_URL + '?callback=_loadCallback&t=' + Date.now();
   s.onerror = () => {
     tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data.</p></div></td></tr>';
   };
@@ -366,7 +385,7 @@ function loadData() {
 }
 
 function updateStats(rows) {
-  const data = rows.slice(1); // skip header
+  const data = rows.slice(1);
   document.getElementById('stat-total').textContent = data.length;
   document.getElementById('stat-belum').textContent = data.filter(r => (r[9]||'').toString().toLowerCase().includes('belum')).length;
   document.getElementById('stat-sudah').textContent = data.filter(r => (r[9]||'').toString().toLowerCase().includes('sudah')).length;
@@ -374,20 +393,17 @@ function updateStats(rows) {
 
 function renderTable(rows) {
   const tbody = document.getElementById('tableBody');
-  const data = rows.slice(1); // skip header row
+  const data = rows.slice(1);
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="eicon">📂</div><p>Belum ada data gadai.</p></div></td></tr>';
     return;
   }
-  // Show newest first
   const reversed = [...data].reverse();
-  tbody.innerHTML = reversed.map((row, i) => {
-    const tgl     = row[0] || '—';
+  tbody.innerHTML = reversed.map((row) => {
+    const tgl     = formatTgl(row[0]);
     const faktur  = row[1] || '—';
-    const anggota = row[2] || '';
     const nama    = row[3] || '—';
     const hp      = row[4] || '—';
-    const alamat  = row[6] || '';
     const waStatus= (row[9] || 'Belum di WA').toString();
 
     let badgeClass = 'wa-belum';
@@ -401,7 +417,7 @@ function renderTable(rows) {
       <td class="td-hp">${hp}</td>
       <td><span class="wa-badge ${badgeClass}">${waStatus}</span></td>
       <td>
-        <button class="btn btn-wa btn-sm" onclick="openFollowUp('${escHtml(nama)}','${escHtml(hp)}')">
+        <button class="btn btn-wa btn-sm" onclick="openFollowUp('${escHtml(nama)}','${escHtml(hp.toString())}')">
           💬 Follow Up
         </button>
       </td>
