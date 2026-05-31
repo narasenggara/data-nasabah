@@ -345,18 +345,24 @@ async function kirimKeSheet() {
 }
 
 // ---- LOAD DATA ----
-async function loadData() {
+function loadData() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>';
-  try {
-    const res = await fetch(SCRIPT_URL);
-    const json = await res.json();
+  
+  window._loadCallback = function(json) {
     allRows = json.data || [];
     renderTable(allRows);
     updateStats(allRows);
-  } catch(e) {
+    document.getElementById('_jsonp')?.remove();
+  };
+
+  const s = document.createElement('script');
+  s.id = '_jsonp';
+  s.src = SCRIPT_URL + '?callback=_loadCallback';
+  s.onerror = () => {
     tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data.</p></div></td></tr>';
-  }
+  };
+  document.body.appendChild(s);
 }
 
 function updateStats(rows) {
