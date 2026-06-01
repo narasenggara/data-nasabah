@@ -61,6 +61,17 @@ textarea:focus{outline:none;border-color:var(--blue-mid);background:#fff}
 .btn-action-lunas{background:var(--green-light);color:var(--green);border:1.5px solid #a8d8b8}
 .btn-action-lunas:hover{background:#d2f0df}
 
+/* SEARCH BAR */
+.search-bar{padding:10px 14px 0;background:var(--blue-pale)}
+.search-bar input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;color:var(--text);background:#fff;outline:none}
+.search-bar input:focus{border-color:var(--blue-mid)}
+
+/* PP / PL buttons */
+.btn-pp{background:var(--orange-light);color:var(--orange);border:1.5px solid #f5c49a;font-size:11px;padding:5px 9px}
+.btn-pp:hover{background:#ffe4cc}
+.btn-pl{background:var(--green-light);color:var(--green);border:1.5px solid #a8d8b8;font-size:11px;padding:5px 9px}
+.btn-pl:hover{background:#d2f0df}
+
 /* FILTER BAR */
 .filter-bar{display:flex;gap:8px;padding:10px 14px;background:var(--blue-pale);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
 .filter-bar input[type=date],.filter-bar select{padding:6px 9px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;color:var(--text);background:#fff;outline:none}
@@ -168,12 +179,6 @@ tr:hover td{background:#f5f9ff}
               <button class="btn-action btn-action-sheet" id="btnKirim" onclick="kirimKeSheet()">
                 <span>📤</span> Kirim ke Spreadsheet
               </button>
-              <button class="btn-action btn-action-perpanjang" onclick="openModalTipe('perpanjang')">
-                <span>🔄</span> Template Perpanjangan
-              </button>
-              <button class="btn-action btn-action-lunas" onclick="openModalTipe('lunas')">
-                <span>✅</span> Template Pelunasan
-              </button>
             </div>
           </div>
 
@@ -193,17 +198,15 @@ tr:hover td{background:#f5f9ff}
           <div style="display:flex;align-items:center;gap:8px"><span>📋</span><h2>Daftar Gadai</h2></div>
           <button class="btn btn-outline btn-sm" onclick="loadData()">🔄 Refresh</button>
         </div>
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="🔍 Cari no. faktur, nama, no. HP..." oninput="applyFilter()">
+        </div>
         <div class="filter-bar">
           <label>Dari</label>
           <input type="date" id="filterFrom" onchange="applyFilter()">
           <label>Sampai</label>
           <input type="date" id="filterTo" onchange="applyFilter()">
-          <select id="filterWa" onchange="applyFilter()">
-            <option value="">Semua Status WA</option>
-            <option value="belum">Belum di WA</option>
-            <option value="sudah">Sudah di WA</option>
-            <option value="tidak">No Tidak Terdaftar</option>
-          </select>
+
           <button class="btn-reset" onclick="resetFilter()">✕ Reset</button>
           <span class="filter-count" id="filterCount"></span>
         </div>
@@ -215,12 +218,11 @@ tr:hover td{background:#f5f9ff}
                 <th onclick="sortBy(1)" id="th-1">No. Faktur <span class="sort-icon"></span></th>
                 <th onclick="sortBy(3)" id="th-3">Nama <span class="sort-icon"></span></th>
                 <th>No. HP</th>
-                <th>Status WA</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="6"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>
+              <tr><td colspan="5"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -409,7 +411,7 @@ function openModalTipe(tipe) {
 // LOAD DATA
 function loadData() {
   const tbody=document.getElementById('tableBody');
-  tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>';
+  tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>';
   const old=document.getElementById('_jsonp_load');
   if(old) old.remove();
   window._loadCallback=function(json){
@@ -421,19 +423,24 @@ function loadData() {
   const s=document.createElement('script');
   s.id='_jsonp_load';
   s.src=SCRIPT_URL+'?callback=_loadCallback&t='+Date.now();
-  s.onerror=()=>{tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data.</p></div></td></tr>';};
+  s.onerror=()=>{tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data.</p></div></td></tr>';};
   document.body.appendChild(s);
 }
 
 // FILTER & SORT
 function applyFilter() {
-  const from  = document.getElementById('filterFrom').value;
-  const to    = document.getElementById('filterTo').value;
-  const waVal = document.getElementById('filterWa').value.toLowerCase();
+  const from   = document.getElementById('filterFrom').value;
+  const to     = document.getElementById('filterTo').value;
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
   let data = allRows.slice(1);
   if (from) { const fromD=new Date(from); data=data.filter(r=>{const d=parseDMY(formatTgl(r[0]));return d&&d>=fromD;}); }
   if (to)   { const toD=new Date(to); toD.setHours(23,59,59); data=data.filter(r=>{const d=parseDMY(formatTgl(r[0]));return d&&d<=toD;}); }
-  if (waVal){ data=data.filter(r=>(r[9]||'').toString().toLowerCase().includes(waVal)); }
+  if (search){ data=data.filter(r=>{
+    const faktur=(r[1]||'').toString().toLowerCase();
+    const nama=(r[3]||'').toString().toLowerCase();
+    const hp=(r[4]||'').toString().toLowerCase();
+    return faktur.includes(search)||nama.includes(search)||hp.includes(search);
+  }); }
   if (sortCol>=0) {
     data.sort((a,b)=>{
       let va=a[sortCol]||'',vb=b[sortCol]||'';
@@ -452,7 +459,7 @@ function applyFilter() {
 function resetFilter() {
   document.getElementById('filterFrom').value='';
   document.getElementById('filterTo').value='';
-  document.getElementById('filterWa').value='';
+  document.getElementById('searchInput').value='';
   sortCol=-1; sortDir=1;
   document.querySelectorAll('th').forEach(t=>t.className='');
   applyFilter();
@@ -507,7 +514,7 @@ function updateStats(data) {
 
 function renderTable(data) {
   const tbody=document.getElementById('tableBody');
-  if(!data.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="eicon">📂</div><p>Tidak ada data.</p></div></td></tr>';return;}
+  if(!data.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">📂</div><p>Tidak ada data.</p></div></td></tr>';return;}
   tbody.innerHTML=data.map(row=>{
     const tgl=formatTgl(row[0]);
     const faktur=row[1]||'—';
@@ -531,12 +538,12 @@ function renderTable(data) {
 function esc(s){return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 
 // MODAL - from table row
-function openFollowUpRow(nama,hp) {
+function openFollowUpRow(nama,hp,tipe) {
   currentWaData={nama,hp};
-  currentTipe='gadai';
+  currentTipe=tipe||'gadai';
   document.getElementById('modal-nama').textContent=nama;
   document.getElementById('modal-hp').textContent=hp;
-  setTipeUI('gadai');
+  setTipeUI(currentTipe);
   document.getElementById('copy-toast').style.display='none';
   document.getElementById('modalOverlay').classList.add('show');
 }
