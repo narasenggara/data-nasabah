@@ -379,17 +379,47 @@ function doLogin() {
     return;
   }
   errEl.classList.remove('show');
-  SCRIPT_URL = CABANG_CONFIG[selectedCabang].scriptUrl;
-  document.getElementById('headerCabangName').textContent = CABANG_CONFIG[selectedCabang].name;
-  document.getElementById('header-sub-code')?.remove();
+  switchToCabang(selectedCabang);
+  sessionStorage.setItem('pgi_cabang', selectedCabang);
   document.getElementById('loginScreen').classList.add('hide');
   document.getElementById('appWrap').classList.add('show');
-  sessionStorage.setItem('pgi_cabang', selectedCabang);
+}
+
+// Reset semua state data lama sebelum pindah ke cabang baru - mencegah data cabang lain bocor
+function switchToCabang(code) {
+  // batalkan request JSONP yang masih jalan dari cabang sebelumnya
+  const oldScript = document.getElementById('_jsonp_load');
+  if (oldScript) oldScript.remove();
+  window._loadCallback = null;
+
+  // reset semua data state
+  allRows = [];
+  filteredData = [];
+  sortCol = -1; sortDir = 1;
+  currentPage = 1;
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('stat-total').textContent = '0';
+  document.getElementById('stat-belum').textContent = '0';
+  document.getElementById('stat-sudah').textContent = '0';
+  document.getElementById('filterCount').textContent = '';
+
+  SCRIPT_URL = CABANG_CONFIG[code].scriptUrl;
+  document.getElementById('headerCabangName').textContent = CABANG_CONFIG[code].name;
   loadData();
 }
 
 function logout() {
   sessionStorage.removeItem('pgi_cabang');
+  // batalkan request yang masih jalan & bersihkan data biar ga kebawa ke sesi berikutnya
+  const oldScript = document.getElementById('_jsonp_load');
+  if (oldScript) oldScript.remove();
+  window._loadCallback = null;
+  allRows = [];
+  filteredData = [];
+  SCRIPT_URL = '';
+  document.getElementById('tableBody').innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>';
   document.getElementById('loginScreen').classList.remove('hide');
   document.getElementById('appWrap').classList.remove('show');
   backToStep1();
@@ -400,10 +430,9 @@ function logout() {
   const saved = sessionStorage.getItem('pgi_cabang');
   if (saved && CABANG_CONFIG[saved]) {
     selectedCabang = saved;
-    SCRIPT_URL = CABANG_CONFIG[saved].scriptUrl;
-    document.getElementById('headerCabangName').textContent = CABANG_CONFIG[saved].name;
     document.getElementById('loginScreen').classList.add('hide');
     document.getElementById('appWrap').classList.add('show');
+    switchToCabang(saved);
   }
 })();
 
