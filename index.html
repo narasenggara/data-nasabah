@@ -226,8 +226,6 @@ tr:hover td{background:#f5f9ff}
 <div class="container">
   <div class="stats-row">
     <div class="stat-card blue"><div class="s-lbl">Total Gadai</div><div class="s-val" id="stat-total">0</div></div>
-    <div class="stat-card gold"><div class="s-lbl">Belum di WA</div><div class="s-val" id="stat-belum">0</div></div>
-    <div class="stat-card green"><div class="s-lbl">Sudah di WA</div><div class="s-val" id="stat-sudah">0</div></div>
   </div>
 
   <div class="top-grid">
@@ -392,18 +390,25 @@ function switchToCabang(code) {
   if (oldScript) oldScript.remove();
   window._loadCallback = null;
 
-  // reset semua data state
+  // reset semua data state SEBELUM render apapun
   allRows = [];
   filteredData = [];
   sortCol = -1; sortDir = 1;
   currentPage = 1;
+  pageSize = 20;
+  document.querySelectorAll('.page-size-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ps-20').classList.add('active');
   document.getElementById('filterFrom').value = '';
   document.getElementById('filterTo').value = '';
   document.getElementById('searchInput').value = '';
   document.getElementById('stat-total').textContent = '0';
-  document.getElementById('stat-belum').textContent = '0';
-  document.getElementById('stat-sudah').textContent = '0';
   document.getElementById('filterCount').textContent = '';
+  document.querySelectorAll('th').forEach(t=>t.classList.remove('sort-asc','sort-desc'));
+
+  // langsung render kondisi kosong dulu, biar ga ada sisa info halaman dari cabang sebelumnya
+  document.getElementById('pageInfo').textContent = '—';
+  document.getElementById('btnPrev').disabled = true;
+  document.getElementById('btnNext').disabled = true;
 
   SCRIPT_URL = CABANG_CONFIG[code].scriptUrl;
   document.getElementById('headerCabangName').textContent = CABANG_CONFIG[code].name;
@@ -577,11 +582,26 @@ function openModalTipe(tipe) {
 
 // LOAD DATA
 function loadData() {
+  if (!SCRIPT_URL) return;
   const tbody=document.getElementById('tableBody');
   tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">⏳</div><p>Memuat data...</p></div></td></tr>';
   const old=document.getElementById('_jsonp_load');
   if(old) old.remove();
+
+  const thisUrl = SCRIPT_URL; // simpan referensi cabang saat request ini dibuat
+
+  // timeout fallback - kalau dalam 10 detik callback ga jalan, anggap gagal
+  const timeoutId = setTimeout(()=>{
+    if (SCRIPT_URL===thisUrl && window._loadCallback) {
+      window._loadCallback = null;
+      tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data. Coba refresh.</p></div></td></tr>';
+    }
+  }, 10000);
+
   window._loadCallback=function(json){
+    clearTimeout(timeoutId);
+    // pastikan response ini masih relevan untuk cabang yang sedang aktif (anti race condition)
+    if (SCRIPT_URL !== thisUrl) return;
     allRows=json.data||[];
     applyFilter();
     const s=document.getElementById('_jsonp_load');
@@ -590,7 +610,11 @@ function loadData() {
   const s=document.createElement('script');
   s.id='_jsonp_load';
   s.src=SCRIPT_URL+'?callback=_loadCallback&t='+Date.now();
-  s.onerror=()=>{tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data.</p></div></td></tr>';};
+  s.onerror=()=>{
+    clearTimeout(timeoutId);
+    if (SCRIPT_URL!==thisUrl) return;
+    tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="eicon">❌</div><p>Gagal memuat data.</p></div></td></tr>';
+  };
   document.body.appendChild(s);
 }
 
@@ -675,8 +699,6 @@ function renderPage() {
 
 function updateStats(data) {
   document.getElementById('stat-total').textContent=data.length;
-  document.getElementById('stat-belum').textContent=data.filter(r=>(r[9]||'').toString().toLowerCase().includes('belum')).length;
-  document.getElementById('stat-sudah').textContent=data.filter(r=>(r[9]||'').toString().toLowerCase().includes('sudah')).length;
 }
 
 function renderTable(data) {
